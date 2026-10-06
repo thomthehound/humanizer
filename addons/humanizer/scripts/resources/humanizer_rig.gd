@@ -12,7 +12,9 @@ func load_skeleton() -> Skeleton3D:
 
 func init_skeleton_data():
 	var skel3D = load_skeleton()
-	return HumanizerRigService.init_skeleton_data(skel3D)
+	var data = HumanizerRigService.init_skeleton_data(skel3D)
+	skel3D.free() # Temporary native node, not a RefCounted resource.
+	return data
 
 #func load_bone_weights() -> Dictionary:
 	#var weights: Dictionary = HumanizerResourceService.load_resource(mh_weights_path).weights

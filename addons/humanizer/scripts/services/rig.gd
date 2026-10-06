@@ -105,7 +105,9 @@ static func _get_base_motion_scale(rig_name:String):
 	var sk: Skeleton3D
 	var rig = get_rig(rig_name)
 	sk = rig.load_skeleton()
-	return sk.motion_scale
+	var scale = sk.motion_scale
+	sk.free() # Only the scalar is needed; do not leak an orphan skeleton.
+	return scale
 
 static func skeleton_add_rigged_equipment(equipment:HumanizerEquipment, sf_arrays:Array,skeleton_data:Dictionary):
 	var mhclo : MHCLO = HumanizerResourceService.load_resource(equipment.get_type().mhclo_path)

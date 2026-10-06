@@ -54,7 +54,14 @@ func set_overlays_from_config(config:HumanizerMaterial):
 		set_overlay(texture,config.texture_overlays[texture].duplicate())
 	
 func generate_material_3D(material:StandardMaterial3D,mesh_arrays:Array):
-	print("generate material 3d")
+	# Constant colors need no GPU job. This preserves their exact meaning while
+	# allowing material generation in a headless process.
+	if base_material == "" and texture_overlays.size() == 1 and texture_overlays.get("albedo") is HumanizerOverlayBlank:
+		material.albedo_texture = null
+		material.albedo_color = texture_overlays.albedo.color
+		is_generating = false
+		done_generating.emit()
+		return material
 	is_generating = true
 			
 	## awaiting outside the main thread will switch to the main thread if the signal awaited is emitted by the main thread		
@@ -70,7 +77,7 @@ func generate_material_3D(material:StandardMaterial3D,mesh_arrays:Array):
 			material[prop_name] = base_mat[prop_name]
 		
 		
-		print("TODO humanizer material - normal strength")
+		# Constant albedo layers evaluate without a viewport, including headless tools.
 		for texture_name in texture_overlays:
 			#use the base texture if possible, dont want to have a bunch of copies in memory
 			if texture_overlays[texture_name] is HumanizerOverlayImage:
@@ -78,8 +85,11 @@ func generate_material_3D(material:StandardMaterial3D,mesh_arrays:Array):
 				material[texture_name+"_texture"] = load(full_texture_path(overlay.path,true))
 				if texture_name == "albedo":
 					material.albedo_color = overlay.color
+			elif texture_name == "albedo" and texture_overlays[texture_name] is HumanizerOverlayBlank:
+				material.albedo_texture = null
+				material.albedo_color = texture_overlays[texture_name].color
 			else:
-				material[texture_name+"_texture"] = await HumanizerAPI.render_overlay_texture(texture_overlays[texture_name],texture_name,mesh_arrays)
+				material[texture_name+"_texture"] = await Engine.get_main_loop().root.get_node("HumanizerAPI").render_overlay_texture(texture_overlays[texture_name],texture_name,mesh_arrays)
 			#if texture_overlays[texture_name].size() == 1 and "gradient" not in texture_overlays[texture_name][0]: 
 				#var overlay = texture_overlays[texture_name][0]
 				#if "texture" in overlay:

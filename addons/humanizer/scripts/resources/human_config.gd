@@ -65,7 +65,10 @@ func set_targets(new_targets:Dictionary):
 
 func _handle_color_overrides(equip:HumanizerEquipment):
 	#print("TODO human config - handle color overrides")
-	var equip_type = equip.get_type()
+	# Saved resources can deserialize before the optional registry is initialized.
+	# Preserve color intent; initialized evaluation reapplies it later.
+	var equip_type = HumanizerRegistry.equipment.get(equip.type)
+	if equip_type == null: return
 	if equip_type.in_slot(["lefteye","righteye","eyes"]):
 		pass
 		#if equip.material_config.texture_overlays.albedo.size() > 1:
@@ -83,9 +86,15 @@ func set_equipment_material(equip:HumanizerEquipment,material):
 
 func get_equipment_in_slot(slot_name:String)->HumanizerEquipment:
 	for equip in equipment.values():
-		if slot_name in equip.get_type().slots:
+		if equip == null: continue
+		var equip_type = HumanizerRegistry.equipment.get(equip.type)
+		if equip_type != null and slot_name in equip_type.slots:
 			return equip # should only be one item per slot
 	return null
+
+func refresh_color_overrides() -> void:
+	for equip in equipment.values():
+		if equip != null: _handle_color_overrides(equip)
 
 func get_equipment_in_slots(slot_names:Array):
 	var equip_list = []
